@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="container">
+    <h1>
+        Cookies
+    </h1>
+    <table class="table">
+        {% for cookie in request.cookies %}
+        <tr>
+            <td>
+                {{ cookie.key }}
+            </td>
+            <td>
+                {{ cookie.value }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock content %}

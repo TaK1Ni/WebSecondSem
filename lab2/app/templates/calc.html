@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <h1>Калькулятор</h1>
+    <form class="d-flex">
+        <input type="text" class="form-control" id="a" placeholder="Первое число" name="a" required />
+        <input type="text" class="form-control" id="operator" placeholder="Действие (+ - * /)" name="operator" required />
+        <input type="text" class="form-control" id="b" placeholder="Второе число" name="b" required />
+        <button type="submit" class="btn btn-primary">=</button>
+    </form>
+    {% if result %} <span>Ответ: {{ result }}</span> {% endif %}
+</div>
+
+{% endblock %}
