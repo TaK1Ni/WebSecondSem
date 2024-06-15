@@ -27,7 +27,7 @@ def index():
     genres = db.session.execute(db.select(Genre)).scalars().all()
     books = db.session.execute(db.select(Book)).scalars().all()
     books = BookFilter().find()
-    pagination = db.paginate(books, per_page=2)
+    pagination = db.paginate(books, per_page=10)
     books = pagination.items
     return render_template(
         'index.html',
