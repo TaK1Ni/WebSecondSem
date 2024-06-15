@@ -40,16 +40,25 @@ class BookFilter:
     def __init__(self):
         self.bookquery = db.select(Book)
         self.genrequery = db.select(GenreBook)
+    
+    def find(self, name='', genres_search='', years_search='', kol_from='', kol_to='', author=''):
+        if name != '':
+            self.bookquery = self.bookquery.filter(Book.name.ilike(f'%{name}%'))
+        
+        if genres_search != '':
+            self.genrequery = self.genrequery.filter(GenreBook.genre_id.in_(genres_search))
 
-    def perform(self):
-        self.__filter_by_name()
-        self.__filter_by_category_ids()
-        return self.query.order_by(Book.created_at.desc())
+        if years_search != '':
+            years_search = [int(i) for i in years_search]
+            self.bookquery = self.bookquery.filter(Book.created_year.in_(years_search))
+        
+        if kol_from != '':
+            self.bookquery = self.bookquery.filter(Book.pages_count >= int(kol_from))
 
-    def __filter_by_name(self):
-        if self.name:
-            self.query = self.query.filter(Book.name.ilike('%' + self.name + '%'))
-
-    def __filter_by_category_ids(self):
-        if self.genre_ids:
-            self.query = self.query.filter(GenreBook.genre_ids.in_(self.genre_ids))
+        if kol_to != '':
+            self.bookquery = self.bookquery.filter(Book.pages_count <= int(kol_to))
+        
+        if author != '':
+            self.bookquery = self.bookquery.filter(Book.author.ilike(f'%{author}%'))
+        
+        return self.bookquery.order_by(Book.created_year.desc())

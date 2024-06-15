@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from tools import SkinSaver, BookFilter
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
+import bleach
 
 bp = Blueprint('book', __name__, url_prefix='/book')
 
@@ -16,6 +17,13 @@ def new():
         genres=genres
         )
 
+@bp.route('/<int:book_id>/reviews')
+def reviews(book_id):
+    book = db.session.query(Book).get_or_404(book_id)
+    genres = db.session.query(Genre).join(GenreBook).filter(GenreBook.book_id == book.id).all()
+    review = db.session.query(Review).filter_by(book_id=book_id, user_id=current_user.id).first()
+    reviews = db.session.query(Review).filter_by(book_id=book_id).order_by(Review.date_added.desc()).all()
+    return render_template('book/reviews.html', book=book, genres=genres, review = review, reviews=reviews)
 
 @bp.route('/create', methods=['POST'])
 @login_required
@@ -26,7 +34,7 @@ def create():
         created_year = request.form['created']
         publish = request.form['publish']
         pages_count = int(request.form['pagescount'])
-        short_desc = request.form['short_desc']
+        short_desc = bleach.clean(request.form['short_desc'])
         genres = request.form.getlist('genres')
         background_img = request.files['background_img']
         try:     
@@ -46,7 +54,7 @@ def create():
             db.session.flush()
             
             if not genres:
-                flash(genres, 'warning')
+                flash('Выберети жанр', 'warning')
                 return render_template('new.html', genres=db.session.query(Genre).all())
             
             for genre_id in genres:
@@ -72,7 +80,10 @@ def create():
 def show(book_id):   
     book = db.session.query(Book).get_or_404(book_id)
     genres = db.session.query(Genre).join(GenreBook).filter(GenreBook.book_id == book.id).all()
-    return render_template('book/show.html', book=book, genres=genres)
+    review = db.session.query(Review).filter_by(book_id=book_id, user_id=current_user.id).first()
+    reviews = db.session.query(Review).filter_by(book_id=book_id).order_by(Review.date_added.desc()).all()
+
+    return render_template('book/show.html', book=book, genres=genres, review = review, reviews=reviews)
 
 
 @bp.route('/images/<skin_id>')
@@ -80,10 +91,28 @@ def skin(skin_id):
     img = db.get_or_404(Skin, skin_id)
     return send_from_directory(bp.config['UPLOAD_FOLDER'], img.filename)
 
-@bp.route('/<int:book_id>/reviews')
+@bp.route('/<int:book_id>', methods=['POST'])
 @login_required
-def reviews(book_id):
-    return 0 
+def add_review(book_id):
+    text = bleach.clean(request.form["reviewBody"])
+    rating = int(request.form["rating"])
+    try:
+        review = Review(
+            rating=rating,
+            text=text, 
+            book_id=book_id, 
+            user_id=current_user.id
+            )
+
+        book = db.get_or_404(Book, book_id)
+        book.rating_sum += rating
+        book.rating_num += 1
+        db.session.add(review)
+        db.session.commit()
+    except Exception as err:
+        flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
+        db.session.rollback()
+    return redirect(url_for('book.show', book_id=book.id))
 
 
 @bp.route('/edit/<int:book_id>', methods=["GET", "POST"])
@@ -99,7 +128,7 @@ def edit(book_id):
             book.created_year = request.form['created']
             book.publish = request.form['publish']
             book.pages_count = int(request.form['pagescount'])
-            book.short_desc = request.form['short_desc']
+            book.short_desc = bleach.clean(request.form['short_desc'])
             genres = request.form.getlist('genres')
             db.session.query(GenreBook).filter_by(book_id=book.id).delete()
 
@@ -134,6 +163,7 @@ def delete(book_id):
     skin = db.session.execute(db.select(Skin).filter_by(id=book.skin_id)).scalars().first()
     skin_filename = skin.filename
     try:
+        db.session.query(Review).filter_by(book_id=book.id).delete()
         db.session.delete(book)
         db.session.delete(skin)
         db.session.commit()
