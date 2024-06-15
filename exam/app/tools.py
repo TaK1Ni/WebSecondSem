@@ -32,13 +32,14 @@ class SkinSaver:
         self.md5_hash = hashlib.md5(self.file.read()).hexdigest()
         self.file.seek(0)
         return db.session.execute(db.select(Skin).filter(Skin.md5_hash == self.md5_hash)).scalar()
+    def drop_skin(skin):
+        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'],skin))
 
 
 class BookFilter:
-    def __init__(self, name, genre_ids):
-        self.name = name
-        self.genre_ids = genre_ids
-        self.query = db.select(Book)
+    def __init__(self):
+        self.bookquery = db.select(Book)
+        self.genrequery = db.select(GenreBook)
 
     def perform(self):
         self.__filter_by_name()

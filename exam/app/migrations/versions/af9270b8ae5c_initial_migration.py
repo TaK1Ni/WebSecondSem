@@ -1,16 +1,16 @@
 """Initial migration
 
-Revision ID: 11c6dfdbdfcf
+Revision ID: af9270b8ae5c
 Revises: 
-Create Date: 2024-06-14 00:13:57.262864
+Create Date: 2024-06-15 01:18:21.097746
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision = '11c6dfdbdfcf'
+revision = 'af9270b8ae5c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -41,7 +41,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('short_desc', sa.Text(), nullable=False),
-    sa.Column('created_year', sa.DateTime(), nullable=False),
+    sa.Column('created_year', mysql.YEAR(), nullable=False),
     sa.Column('publish', sa.String(length=100), nullable=False),
     sa.Column('author', sa.String(length=100), nullable=False),
     sa.Column('pages_count', sa.Integer(), nullable=False),

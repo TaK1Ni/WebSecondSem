@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, ForeignKey, DateTime, Text, Integer, MetaData
+from sqlalchemy.dialects.mysql.types import YEAR
 
 ADMIN_ROLE_ID = 1
 MODER_ROLE_ID = 2
@@ -74,7 +75,7 @@ class Book(Base):
     id = mapped_column(Integer, primary_key=True) 
     name: Mapped[str] = mapped_column(String(100), nullable=False) 
     short_desc: Mapped[str] = mapped_column(Text, nullable=False) 
-    created_year: Mapped[datetime] = mapped_column(DateTime, nullable=False) 
+    created_year: Mapped[int] = mapped_column(YEAR, nullable=False)
     publish: Mapped[str] = mapped_column(String(100), nullable=False) 
     author: Mapped[str] = mapped_column(String(100), nullable=False) 
     pages_count: Mapped[int] = mapped_column(nullable=False) 

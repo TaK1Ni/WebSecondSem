@@ -3,10 +3,12 @@ from flask_migrate import Migrate
 from sqlalchemy.exc import SQLAlchemyError
 from auth import bp as auth_bp, init_login_manager
 from book import bp as book_bp
-from models import db, Genre,Book,Skin
+from models import db, Genre, Book, Skin
+from tools import BookFilter
 
 
 app = Flask(__name__)
+
 application = app
 app.config.from_pyfile('config.py')
 
