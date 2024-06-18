@@ -37,8 +37,17 @@
                             <span>★</span> <span>{{ "%.2f" | format(book.rating) }}</span>
                         </p> 
                     </div>
-                    <p class="text-muted my-3">{{ book.author.full_name }}</p>
+
+                    <p class="text-muted my-3">
+                        {% if book.name in genres_for_books %} 
+                            {% for genre in genres_for_books[book.name] %} 
+                                {{ genre }} 
+                            {% endfor %}
+                        {% endif %}
+                    </p>
                     <p>{{ book.short_desc | truncate(200) }}</p>
+                    <p>{{ book.created_year }}</p>
+                    <p>{{ book.rating_num }}</p>
                     <div class="mt-3">
                         <div class="d-flex flex-wrap">
                             {% if current_user.is_authenticated and current_user.can('show') %}
@@ -76,7 +85,7 @@
 
     {{ render_pagination(pagination, request.endpoint) }}
 
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and current_user.can('create') %}
         <div class="text-center my-3">
             <a class="btn btn-lg btn-dark" href="{{ url_for('book.new') }}">Создать книгу</a>
         </div>

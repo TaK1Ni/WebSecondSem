@@ -5,11 +5,14 @@ from tools import SkinSaver, BookFilter
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 import bleach
+from auth import check_rights
 
 bp = Blueprint('book', __name__, url_prefix='/book')
 
 
 @bp.route('/new')
+@login_required
+@check_rights('create')
 def new():
     genres = db.session.execute(db.select(Genre)).scalars()
     return render_template(
@@ -18,6 +21,7 @@ def new():
         )
 
 @bp.route('/<int:book_id>/reviews')
+@login_required
 def reviews(book_id):
     book = db.session.query(Book).get_or_404(book_id)
     genres = db.session.query(Genre).join(GenreBook).filter(GenreBook.book_id == book.id).all()
@@ -27,6 +31,7 @@ def reviews(book_id):
 
 @bp.route('/create', methods=['POST'])
 @login_required
+@check_rights('create')
 def create():  
     if request.method == "POST":
         name = request.form['name']
@@ -68,7 +73,7 @@ def create():
             
             db.session.commit()
             flash('Книга успешно добавлена', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('book.show', book_id=book.id))
         
         except Exception as err:
             db.session.rollback()
@@ -117,6 +122,7 @@ def add_review(book_id):
 
 @bp.route('/edit/<int:book_id>', methods=["GET", "POST"])
 @login_required
+@check_rights('edit')
 def edit(book_id):
     book = db.session.query(Book).get_or_404(book_id)
     genres_main = db.session.query(Genre).all()
@@ -158,6 +164,7 @@ def edit(book_id):
 
 @bp.route('/<int:book_id>/delete', methods=["GET", "POST"])
 @login_required
+@check_rights('delete')
 def delete(book_id):
     book = db.session.execute(db.select(Book).filter_by(id=book_id)).scalars().first()
     skin = db.session.execute(db.select(Skin).filter_by(id=book.skin_id)).scalars().first()
