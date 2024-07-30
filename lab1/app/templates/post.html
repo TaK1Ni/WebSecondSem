@@ -1,39 +1,47 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="card my-5">
-        <div class="card-body">
-            <h2 class="card-title">{{ post.title }}</h2>
-            <p class="card-text">{{ post.author }}, {{ post.date.strftime('%d.%m.%Y') }}</p>
-            <img class="card-img-top" src="{{ url_for('static', filename='images/' + post.image_id) }}" alt="Card image cap">
-        </div>
-        <div class="card-body">
-            <p class="card-text">{{ post.text }}</p> 
-        </div>
-        <form class="mt-4">
-            <div class="form-group">
-                <label for="commentText">Оставьте комментарий</label>
-                <textarea class="form-control" id="commentText" rows="3"></textarea>
+    <div class="w-75 mx-auto mt-3">
+        <h1 class="text-center">{{ post.title }}</h1>
+        <p class="my-3">{{ post.author }}</p>
+        <p class="my-1">{{ post.date }}</p>
+        <img src="{{ url_for('static', filename='images/' + post.image_id) }}" alt="Card image cap" class="mw-100 my-3">
+        <p class="my-3 text-wrap text-break">{{ post.text }}</p>
+        <div class="modal-content flex-column">
+            <div class="modal-header">
+                <h5 class="my-0">Оставьте комментарий</h5>
             </div>
-            <button type="submit" class="btn btn-primary">Отправить</button>
-        </form>
-        <div class="card-body">
-            <h5 class="card-title">Комментарии</h5>
-            {% for comment in post.comments %}
-                <div class="media my-3">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar-placeholder"></div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h5>{{ comment.author }}</h5>
-                            <p>{{ comment.text }}</p>
-                            
-
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
+            <div class="modal-body">
+                <form>
+                    <textarea name="comments" id="comment" cols="100" rows="3" class="mw-100 my-0"></textarea>
+                </form>
+            </div>
+            <div class="modal-footer mt-0">
+                <button type="button" class="btn btn-primary my-0">Отправить</button>
+            </div>
         </div>
+        {% for comment in post.comments %}
+            <div class="comment-block">
+                <img src="{{url_for('static', filename='images/' + 'avacom.jpg')}}" style="width: 40px; height: 40px" class="avacom" alt="avacom">
+                <div>
+                    <p class="comtext"><strong>{{ comment.author }}</strong></p>
+                    <p class="comtext">{{ comment.text }}</p>
+                </div>
+                
+                {% if comment.replies %}
+                    <div class="reply-block">
+                        {% for reply in comment.replies %}
+                            <img src="{{url_for('static', filename='images/' + 'avacom.jpg')}}" style="width: 40px; height: 40px" class="avacom" alt="avacom">
+                            <p class="comtext"><strong>{{ reply.author }}:</strong> {{ reply.text }}</p>
+                            <div>
+                                <img src="{{url_for('static', filename='images/' + 'avacom.jpg')}}" style="width: 40px; height: 40px" class="avacom" alt="avacom">
+                                <p class="comtext"><strong>{{ comment.author }}</strong></p>
+                                <p class="comtext">{{ comment.text }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
     </div>
 {% endblock %}

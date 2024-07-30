@@ -108,12 +108,13 @@ def add_review(book_id):
             book_id=book_id, 
             user_id=current_user.id
             )
-
-        book = db.get_or_404(Book, book_id)
-        book.rating_sum += rating
-        book.rating_num += 1
-        db.session.add(review)
-        db.session.commit()
+        review_check = db.session.query(Review).filter_by(book_id=book_id, user_id=current_user.id).first()
+        if not review_check:
+            book = db.get_or_404(Book, book_id)
+            book.rating_sum += rating
+            book.rating_num += 1
+            db.session.add(review)
+            db.session.commit()
     except Exception as err:
         flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
         db.session.rollback()

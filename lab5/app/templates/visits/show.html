@@ -16,11 +16,7 @@
         <tr>
           <td>{{ val.id }}</td>
           <td>{{ val.path }}</td>
-          {% if val.user_id == None %}
-            <td>Неаутентифицированный пользователь</td>
-          {% else %}
-            <td>{{ val.user_id }}</td>  
-          {% endif %}
+          <td>{{ val.fio }}</td>  
           <td>{{ val.created_at }}</td>
         </tr>
         {% endfor %}

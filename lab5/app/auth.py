@@ -28,8 +28,8 @@ def check_rights(action):
             if current_user.can(action, user):
                 return func(*args, **kwargs)
             else:
-                flash("User can't perform this action", "danger")
-                return redirect(url_for('show_users'))
+                flash("Ты челедь без прав! Ты чего!!!", "danger")
+                return redirect(url_for('index'))
         return wrapper
     return decorator
 
@@ -50,7 +50,7 @@ class User(UserMixin):
 
 
 def load_user(user_id):
-    query = 'SELECT * FROM users2 WHERE users2.id=%s'
+    query = 'SELECT * FROM users2 WHERE users2.id = %s'
     cursor = db.connection().cursor(named_tuple=True)
     cursor.execute(query, (user_id,))
     user = cursor.fetchone()

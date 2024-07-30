@@ -1,5 +1,6 @@
 from flask import Flask, render_template, make_response, request
-
+import re
+    
 app = Flask(__name__)
 
 application = app
@@ -51,19 +52,24 @@ def phoneNumber():
     if request.method == 'POST':
         phone = request.form["phone"]
 
-        if phone[0] not in ["+", "7", "8"]:
-            error = "Недопустимый ввод. Неверный префикс."
-            return render_template("phoneNumber.html", title="Проверка номера телефона", phone=error)
+        phoneNumbers = re.findall("\d{1}", phone)
+        if not phoneNumbers:
+            phoneNumbers.append("")
 
-        phone_digits = [digit for digit in phone if digit.isdigit()]
+        error = ""
+        if not all([symbol in [" ", "(", ")", "-", ".", "+", *list(map(str, list(range(10))))] for symbol in phone]):
+            error = "Ошибка! Вы ввели недопустимые символы."
+        elif phoneNumbers[0] in ["7", "8"] and len(phoneNumbers) != 11:
+            error = "Ошибка! Вы ввели неверное количество цифр."
+        elif phoneNumbers[0] not in ["7", "8"] and len(phoneNumbers) != 10:
+            error = "Ошибка! Вы ввели недопустимое количество цифр."
 
-        if len(phone_digits) not in [10, 11]:
-            error = "Недопустимый ввод. Неверное количество цифр."
-            return render_template("phoneNumber.html", title="Проверка номера телефона", phone=error)
+        if error:
+            return render_template("phoneNumber.html", title="Проверка телефона", phone=error)
 
-        if len(phone_digits) == 10:
-            phone_digits.insert(0, "8")
+        if len(phoneNumbers) == 10:
+            phoneNumbers.insert(0, "8")
 
-        return render_template("phoneNumber.html", title="Проверка номера телефона", phone="8-{1}{2}{3}-{4}{5}{6}-{7}{8}-{9}{10}".format(*phone_digits))
+        return render_template("phoneNumber.html", title="Проверка телефона", phone="8-{1}{2}{3}-{4}{5}{6}-{7}{8}-{9}{10}".format(*phoneNumbers))
     else:
-        return render_template("phoneNumber.html", title="Проверка номера телефона")
+        return render_template("phoneNumber.html", title="Проверка телефона")

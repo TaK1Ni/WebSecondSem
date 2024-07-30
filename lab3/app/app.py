@@ -5,7 +5,6 @@ app = Flask(__name__)
 
 application = app
  
-# app.secret_key = 'f038a541489b89f81762d12edfdd03835ceea10cfb3cdbdabfbfa0f48b0d4802'
 app.config.from_pyfile('config.py')
 
 login_manager = LoginManager()

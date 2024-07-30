@@ -27,37 +27,40 @@ class User(UserMixin):
         self.login = user_login
 
 
-def password_validation(password: str) -> bool:
-    reg = re.compile(r'''^(?=.*?[a-zа-я])(?=.*?[A-ZА-Я])(?=.*?[0-9])[-A-ZА-Яa-zа-я\d~!?@#$%^&*_+()\[\]{}></\\|"'.,:;]{8,128}$''')
-    if reg.match(password):
-        return True
-    else:
-        return False
+def password_validation(password: str) -> str:
+    re1 = re.compile(r'''^[-A-ZА-Яa-zа-я\d~!?@#$%^&*_+()\[\]{}></\\|"'.,:;]{8,}$''')
+    re2 = re.compile(r'''^[-A-ZА-Яa-zа-я\d~!?@#$%^&*_+()\[\]{}></\\|"'.,:;]{,128}$''')
+    re3 = re.compile(r'''^(?=.*?[a-zа-я])(?=.*?[A-ZА-Я]).*$''')
+    re4 = re.compile(r'''^(?=.*?[0-9]).*$''')
+    re6 = re.compile(r'''^(?=.*?[-~!?@#$%^&*_+()\[\]{}><\/\\|"'.,:;]{0,}).*$''')
+    error = []
+    if not re1.match(password):
+        error.append("не менее 8 символов")
+    if not re2.match(password):
+        error.append("не более 128 символов")
+    if not re3.match(password):
+        error.append("как минимум одна заглавная и одна строчная буква; только латинские или кириллические буквы")
+    if not re4.match(password):
+        error.append("как минимум одна цифра; только арабские цифры")
+    if password.find(' ') != -1:
+        error.append("без пробелов")
+    if not re6.match(password):
+        error.append(r'''Другие допустимые символы:~ ! ? @ # $ % ^ & * _ - + ( ) [ ] { } > < / \ | " ' . , : ;''')
+    return "; ".join(error) + '.' if len(error) > 0 else ''
 
 
 def login_validation(login: str) -> bool:
-    reg = re.compile(r'^[0-9a-zA-Z]{5,}$')
-    if reg.match(login):
-        return True
-    else:
-        return False
+    reg = re.compile(r'^[]{5,}$')
+    return reg.match(login)
 
 
 def validate(login: str, password: str, last_name: str, first_name: str) -> Dict[str, str]:
     errors = {}
-    if not password_validation(password):
+    error = password_validation(password)
+    if len(error) != 0:
         errors['p_class'] = "is-invalid"
         errors['p_message_class'] = "invalid-feedback"
-        errors['p_message'] = '''Пароль не удовлетворяет одному из следующих требований:
-не менее 8 символов;
-не более 128 символов;
-как минимум одна заглавная и одна строчная буква;
-только латинские или кириллические буквы;
-как минимум одна цифра;
-только арабские цифры;
-без пробелов;
-Другие допустимые символы:~ ! ? @ # $ % ^ & * _ - + ( ) [ ] { } > < / \ | " ' . , : ;
-            '''
+        errors['p_message'] = error
     if not login_validation(login):
         errors['l_class'] = "is-invalid"
         errors['l_message_class'] = "invalid-feedback"
@@ -80,14 +83,16 @@ def validate(login: str, password: str, last_name: str, first_name: str) -> Dict
         errors['fn_message'] = "Имя не должно быть пустым"
     return errors
 
-
 @login_manager.user_loader
 def load_user(user_id):
-    query = 'SELECT id, login FROM users2 WHERE id = %s'
-    with db.connection().cursor(named_tuple=True) as cursor:
-        cursor.execute(query, (user_id,))
-        user = cursor.fetchone()
-        return User(user.id, user.login) if user else None
+    query = 'SELECT * FROM users WHERE users.id=%s'
+    cursor = db.connection().cursor(named_tuple=True)
+    cursor.execute(query, (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    if user:
+        return User(user.id, user.login)
+    return None
 
 
 @app.route('/')
@@ -102,7 +107,7 @@ def login():
         password = request.form['password']
         check = request.form.get('secretcheck') == 'on'
         
-        query = 'SELECT id, login FROM users2 WHERE login=%s AND password_hash=SHA2(%s, 256)'
+        query = 'SELECT id, login FROM users WHERE login=%s AND password=SHA2(%s, 256)'
         
         try:
             with db.connection().cursor(named_tuple=True) as cursor:
@@ -128,10 +133,9 @@ def logout():
     return redirect(url_for('index'))
 
 
-@app.route('/users/')
 @login_manager.user_loader
 def load_user(user_id):
-    query = 'SELECT * FROM users2 WHERE id = %s'
+    query = 'SELECT * FROM users WHERE id = %s'
     with db.connection().cursor(named_tuple=True) as cursor:
         cursor.execute(query, (user_id,))
         user = cursor.fetchone()
@@ -147,13 +151,12 @@ def create():
         last_name = request.form['last_name']
         middle_name = request.form['middle_name']
         password = request.form['password']
-
         errors = validate(login, password, last_name, first_name)
         if errors:
             return render_template('users/create.html', **errors)
 
         insert_query = '''
-            INSERT INTO users2 (login, last_name, first_name, middle_name, password_hash)
+            INSERT INTO users (login, last_name, first_name, middle_name, password)
             VALUES (%s, %s, %s, %s, SHA2(%s, 256))
         '''
 
@@ -169,10 +172,20 @@ def create():
 
     return render_template('users/create.html')
 
+@app.route('/users/')
+@login_required
+def show_users():
+    query = 'SELECT * FROM users'
+    cursor = db.connection().cursor(named_tuple=True)
+    cursor.execute(query)
+    users = cursor.fetchall()
+    cursor.close()
+    return render_template('users/index.html',users=users)
+
 
 @app.route('/users/show/<int:user_id>') 
 def show_user(user_id):
-    query = 'SELECT * FROM users2 WHERE users2.id=%s'
+    query = 'SELECT * FROM users WHERE users.id=%s'
     with db.connection().cursor(named_tuple=True) as cursor:
         cursor.execute(query, (user_id,))
         user = cursor.fetchone()
@@ -186,7 +199,7 @@ def edit(user_id):
         last_name = request.form['last_name']
         middle_name = request.form['middle_name']
         
-        update_query = 'UPDATE users2 SET first_name = %s, last_name = %s, middle_name = %s WHERE id = %s'
+        update_query = 'UPDATE users SET first_name = %s, last_name = %s, middle_name = %s WHERE id = %s'
 
         try:
             with db.connection().cursor(named_tuple=True) as cursor:
@@ -198,7 +211,7 @@ def edit(user_id):
             flash('При обновлении пользователя произошла ошибка.', 'danger')
             return render_template('users/edit.html')
 
-    select_query = 'SELECT * FROM users2 WHERE id = %s'
+    select_query = 'SELECT * FROM users WHERE id = %s'
     with db.connection().cursor(named_tuple=True) as cursor:
         cursor.execute(select_query, (user_id,))
         user = cursor.fetchone()
@@ -211,7 +224,7 @@ def edit(user_id):
 def delete():
     try:
         user_id = request.args.get('user_id')
-        query = 'DELETE FROM users2 WHERE id = %s'
+        query = 'DELETE FROM users WHERE id = %s'
         with db.connection().cursor(named_tuple=True) as cursor:
             cursor.execute(query, (user_id,))
             db.connection().commit()
@@ -231,8 +244,8 @@ def change():
         password = request.form['password']
         n_password = request.form['n_password']
         n_password_2 = request.form['n2_password']
-        
-        check_password_query = 'SELECT * FROM `users2` WHERE id = %s AND password_hash = SHA2(%s, 256)'
+        error = password_validation(n_password)
+        check_password_query = 'SELECT * FROM `users` WHERE id = %s AND password = SHA2(%s, 256)'
         
         try:
             with db.connection().cursor(named_tuple=True) as cursor:
@@ -241,12 +254,12 @@ def change():
                 
                 if not user:
                     flash('Старый пароль не соответствует текущему', 'danger')
-                elif not password_validation(n_password):
-                    flash('Новый пароль не соответствует требованиям', 'danger')
+                elif len(error) != 0:
+                    flash(error, 'danger')
                 elif n_password != n_password_2:
                     flash('Пароли не совпадают', 'danger')
                 else:
-                    update_password_query = 'UPDATE `users2` SET password_hash = SHA2(%s, 256) WHERE id = %s'
+                    update_password_query = 'UPDATE `users` SET password = SHA2(%s, 256) WHERE id = %s'
                     cursor.execute(update_password_query, (n_password, user_id))
                     db.connection().commit()
                     flash('Пароль успешно обновлен.', 'success')

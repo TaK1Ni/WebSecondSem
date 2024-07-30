@@ -95,6 +95,7 @@ def create():
 
 
 @app.route('/users/show/<int:user_id>')
+@login_required
 @check_rights('show')
 def show_user(user_id):
     query = 'SELECT * FROM users2 WHERE users2.id=%s'
@@ -138,7 +139,6 @@ def edit(user_id):
     return render_template('users/edit.html', user=user)
 
 @app.route('/users/delete/')
-@login_required
 @check_rights('delete')
 def delete():
     try:
